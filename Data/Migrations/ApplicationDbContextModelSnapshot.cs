@@ -134,8 +134,6 @@ namespace Conveyer.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<string>("ContentDisposition");
-
                     b.Property<int?>("ContentId");
 
                     b.Property<string>("ContentType");
@@ -143,6 +141,8 @@ namespace Conveyer.Data.Migrations
                     b.Property<DateTime>("DateUploaded");
 
                     b.Property<string>("FileName");
+
+                    b.Property<string>("Guid");
 
                     b.Property<long>("Size");
 
