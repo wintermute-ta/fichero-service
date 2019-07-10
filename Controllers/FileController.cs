@@ -17,11 +17,7 @@ namespace Conveyer.Controllers
     [Route("api/[controller]")]
     public class FileController : Controller
     {
-        private FileExtensionContentTypeProvider FileExtProv { get; }
-        private UserManager<ApplicationUser> UserManager { get; }
-        private DataService DataService { get; }
-
-        public FileController(FileExtensionContentTypeProvider fileExtProv, 
+        public FileController(FileExtensionContentTypeProvider fileExtProv,
             UserManager<ApplicationUser> userManager,
             DataService dataService)
         {
@@ -30,21 +26,55 @@ namespace Conveyer.Controllers
             DataService = dataService;
         }
 
+        private DataService DataService { get; }
+        private FileExtensionContentTypeProvider FileExtProv { get; }
+        private UserManager<ApplicationUser> UserManager { get; }
+
+
+        [Authorize]
         [HttpGet("[action]")]
-        public ActionResult Download()
+        public async Task<IEnumerable<FileDescriptionDTO>> Descriptions()
+        {
+            var user = await UserManager.GetUserAsync(User);
+            return DataService.GetAllDescriptions(user.Id).Select(x=> x.ToDto());
+        }
+
+        [HttpGet("[action]/{guid}")]
+        public async Task<ActionResult> Display(string guid)
         {
             return null;
         }
 
-        [HttpGet("[action]")]
-        public ActionResult Display()
+        [HttpGet("[action]/{guid}")]
+        public async Task<ActionResult> Download(string guid)
         {
-            return null;
+            FileDescription fileDescription;
+
+            if (User.Identity.IsAuthenticated)
+            {
+                var user = await UserManager.GetUserAsync(User);
+                fileDescription = DataService.GetFileDescriptionAndContent(guid, user.Id);
+            }
+            else
+            {
+                fileDescription = DataService.GetFileDescriptionAndContent(guid);
+            }
+
+            if (fileDescription == null)
+            {
+                return NotFound();
+            }
+
+            Response.ContentType = fileDescription.ContentType;
+            var cd = $"form-data; name=\"file\"; filename=\"{fileDescription.FileName}\"";
+            Response.Headers.TryAdd("Content-Disposition", cd);
+
+            return File(fileDescription.Content.Content, fileDescription.ContentType);
         }
 
         [RequestSizeLimit(100_000_000)]
         [HttpPost("[action]")]
-        public async Task<IActionResult> Upload(IFormFile file)
+        public async Task<FileDescriptionDTO> Upload(IFormFile file)
         {
             try
             {
@@ -62,10 +92,11 @@ namespace Conveyer.Controllers
                 };
                 var fileDescription = new FileDescription()
                 {
-                    FileName = file.FileName,
+                    FileName = Path.GetFileName(file.FileName),
                     Content = fileContent,
                     DateUploaded = DateTime.Now,
                     ContentType = file.ContentType,
+                    ContentDisposition = file.ContentDisposition,
                     Size = file.Length,
                     Guid = Guid.NewGuid().ToString()
                 };
@@ -77,16 +108,7 @@ namespace Conveyer.Controllers
                 }
                 await DataService.AddFileDescription(fileDescription);
 
-                var dto = new FileDescriptionDTO()
-                {
-                    FileName = fileDescription.FileName,
-                    ContentType = fileDescription.ContentType,
-                    DateUploaded = fileDescription.DateUploaded,
-                    Guid = fileDescription.Guid,
-                    Id = fileDescription.Id,
-                    Size = fileDescription.Size
-                };
-                return Json(dto);
+                return fileDescription.ToDto();
             }
             catch (Exception ex)
             {
