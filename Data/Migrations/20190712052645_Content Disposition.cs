@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace Conveyer.Data.Migrations
+namespace Conveyor.Data.Migrations
 {
     public partial class ContentDisposition : Migration
     {

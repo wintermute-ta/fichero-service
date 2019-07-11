@@ -11,18 +11,8 @@
 		id: number;
 		size: number;
 		user: {
-			authenticationTokens: {
-				local: {
-					count: number;
-					isReadOnly: boolean;
-				};
-			};
-			fileDescriptions: {
-				local: {
-					count: number;
-					isReadOnly: boolean;
-				};
-			};
+			authenticationTokens: any[];
+			fileDescriptions: .fileDescription[];
 		};
 		userId: string;
 	}

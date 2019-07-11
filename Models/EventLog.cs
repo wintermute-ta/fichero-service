@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Conveyer.Models
+namespace Conveyor.Models
 {
     public class EventLog
     {

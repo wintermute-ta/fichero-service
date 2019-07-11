@@ -6,13 +6,13 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Linq;
 using System.Threading.Tasks;
-using Conveyer.Models;
+using Conveyor.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 
-namespace Conveyer.Areas.Identity.Pages.Account.Manage
+namespace Conveyor.Areas.Identity.Pages.Account.Manage
 {
     public class EnableAuthenticatorModel : PageModel
     {
@@ -149,7 +149,7 @@ namespace Conveyer.Areas.Identity.Pages.Account.Manage
         {
             return string.Format(
                 AuthenticatorUriFormat,
-                _urlEncoder.Encode("Conveyer"),
+                _urlEncoder.Encode("Conveyor"),
                 _urlEncoder.Encode(email),
                 unformattedKey);
         }

@@ -1,0 +1,74 @@
+<h5 class="mb-4" *ngIf="this.isAuthenticated">
+  Welcome, {{userName}}
+</h5>
+
+<div *ngIf="uploads.length > 0">
+  <div class="col-sm-12">
+    <h2>Active Uploads</h2>
+  </div>
+  <div *ngFor="let fileUpload of uploads" class="row mb-3">
+    <div class="col-sm-12">
+      {{fileUpload.fileName}}
+      <progress role="progressbar" [value]='fileUpload.percentLoaded'></progress>
+    </div>
+  </div>
+</div>
+
+<div style="overflow-x: auto">
+  <div style="display:grid; grid-template-columns: 1fr 1fr">
+    <div>
+      <button class="btn btn-danger mb-1" (click)="deleteAllSelectedFiles()">Delete</button>
+      <button class="btn btn-primary mb-1 ml-2" (click)="uploadInput.click()">Upload</button>
+    </div>
+
+    <div class="text-right">
+      Filter:
+      <input #filterInput (input)="applyFilter(filterInput.value)" (change)="applyFilter(filterInput.value)" />
+    </div>
+  </div>
+
+  <table class="table table-striped" (dragover)="onDragOver($event)" (drop)="onDrop($event)">
+    <thead>
+      <tr>
+        <th><input #selectAllCheckbox type="checkbox" (change)="toggleSelectAll(selectAllCheckbox.checked)" /></th>
+        <th class="sortable-header" (click)='toggleColumnSorting(0)'>
+          Filename
+          <fa-icon [icon]="currentSortIcon" *ngIf="currentSortColumn == 0 && currentSortIcon != null"></fa-icon>
+        </th>
+        <th class="sortable-header" (click)='toggleColumnSorting(1)'>
+          Date Uploaded
+          <fa-icon [icon]="currentSortIcon" *ngIf="currentSortColumn == 1 && currentSortIcon != null"></fa-icon>
+        </th>
+        <th class="sortable-header" (click)='toggleColumnSorting(2)'>
+          Size (KB)
+          <fa-icon [icon]="currentSortIcon" *ngIf="currentSortColumn == 2  && currentSortIcon != null"></fa-icon>
+        </th>
+        <th>Download Link</th>
+        <th>Delete Link</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor='let fileDescription of filteredData;'>
+        <td>
+          <input #fileSelectCheckbox type="checkbox" [checked]="fileDescription.isSelected"
+            (change)="toggleFileSelected(fileDescription.guid, fileSelectCheckbox.checked)" />
+        </td>
+        <td>{{fileDescription.fileName}}</td>
+        <td>{{fileDescription.dateUploaded.toLocaleString()}}</td>
+        <td>{{fileDescription.sizeInKb}}</td>
+        <td>
+          <a href="/api/File/Download/{{fileDescription.guid}}" target="_blank">Download</a>
+          <span *ngIf="fileDescription.contentType.includes('image') || fileDescription.contentType.includes('video')">
+            | <a href="#" (click)="viewFile(fileDescription.guid)">View</a>
+          </span>
+        </td>
+        <td><a href="#" class="text-danger" (click)="deleteFile(fileDescription.guid)">Delete</a></td>
+      </tr>
+    </tbody>
+  </table>
+  <input type="file" #uploadInput hidden multiple (change)="onUploadInputChanged(uploadInput)" />
+</div>
+
+<div class="file-viewer">
+  
+</div>

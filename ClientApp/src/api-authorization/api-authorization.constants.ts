@@ -1,4 +1,4 @@
-export const ApplicationName = 'Conveyer';
+export const ApplicationName = 'Conveyor';
 
 export const ReturnUrlType = 'returnUrl';
 

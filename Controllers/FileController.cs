@@ -1,6 +1,6 @@
-﻿using Conveyer.Data;
-using Conveyer.DTOs;
-using Conveyer.Models;
+﻿using Conveyor.Data;
+using Conveyor.DTOs;
+using Conveyor.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -12,7 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Conveyer.Controllers
+namespace Conveyor.Controllers
 {
     [Route("api/[controller]")]
     public class FileController : Controller
@@ -34,7 +34,7 @@ namespace Conveyer.Controllers
         public async Task<ActionResult> Delete(string fileGuid)
         {
             var user = await UserManager.GetUserAsync(User);
-            DataService.DeleteFile(fileGuid, user.Id);
+            await DataService.DeleteFile(fileGuid, user.Id);
             return Ok();
         }
 
@@ -42,7 +42,7 @@ namespace Conveyer.Controllers
         public async Task<ActionResult> DeleteMany([FromBody]string[] fileGuids)
         {
             var user = await UserManager.GetUserAsync(User);
-            DataService.DeleteFiles(fileGuids, user.Id);
+            await DataService.DeleteFiles(fileGuids, user.Id);
             return Ok();
         }
 
@@ -51,8 +51,7 @@ namespace Conveyer.Controllers
         public async Task<IEnumerable<FileDescriptionDTO>> Descriptions()
         {
             var user = await UserManager.GetUserAsync(User);
-            return DataService.GetAllDescriptions(user.Id).Select(x => x.ToDto());
-            
+            return DataService.GetAllDescriptions(user.Id).Select(x => x.ToDto());    
         }
 
         [HttpGet("[action]/{fileGuid}")]
@@ -75,13 +74,6 @@ namespace Conveyer.Controllers
                 return NotFound();
             }
 
-            if (!fileDescription.ContentType.Contains("image") && !fileDescription.ContentType.Contains("video"))
-            {
-                return BadRequest();
-            }
-
-            var cd = $"form-data; name=\"file\"; filename=\"{fileDescription.FileName}\"";
-            Response.Headers.TryAdd("Content-Disposition", cd);
             return File(fileDescription.Content.Content, fileDescription.ContentType);
         }
 
@@ -107,14 +99,14 @@ namespace Conveyer.Controllers
 
             var cd = $"form-data; name=\"file\"; filename=\"{fileDescription.FileName}\"";
             Response.Headers.TryAdd("Content-Disposition", cd);
-            return File(fileDescription.Content.Content, "application/octet-stream");
+            return File(fileDescription.Content.Content, fileDescription.ContentType);
         }
 
         [HttpPost("[action]")]
         public async Task<IActionResult> TransferFilesToAccount([FromBody]string[] fileGuids)
         {
             var user = await UserManager.GetUserAsync(User);
-            DataService.TransferFilesToAccount(fileGuids, user.Id);
+            await DataService.TransferFilesToAccount(fileGuids, user.Id);
             return Ok();
         }
 
