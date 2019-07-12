@@ -26,16 +26,20 @@ namespace Conveyor.Data
             await DbContext.SaveChangesAsync();
         }
 
-        public async Task DeleteFile(string fileGuid, ApplicationUser user)
+        public async Task AddFileDescription(FileDescription fileDescription, string authenticationToken, string ipAddress)
         {
-            DbContext.FileDescriptions.RemoveRange(DbContext.FileDescriptions.Where(x => x.User.Id == user.Id && x.Guid == fileGuid));
-            await DbContext.SaveChangesAsync();
-        }
+            var authToken = DbContext.AuthenticationTokens
+                                .Include(x => x.User)
+                                .ThenInclude(x=>x.FileDescriptions)
+                                .FirstOrDefault(x => x.Token == authenticationToken);
 
-        public async Task DeleteFiles(string[] fileGuids, ApplicationUser user)
-        {
-            DbContext.FileDescriptions.RemoveRange(DbContext.FileDescriptions.Where(x => x.User.Id == user.Id && fileGuids.Contains(x.Guid)));
-            await DbContext.SaveChangesAsync();
+            if (authToken != null)
+            {
+                authToken.LastUsed = DateTime.Now;
+                authToken.LastUsedIp = ipAddress;
+                authToken.User.FileDescriptions.Add(fileDescription);
+                await DbContext.SaveChangesAsync();
+            }
         }
 
         public async Task<AuthenticationToken> AddNewToken(ApplicationUser user)
@@ -52,12 +56,57 @@ namespace Conveyor.Data
             return newToken;
         }
 
-        public async Task UpdateTokenDescription(string tokenGuid, string description, ApplicationUser user)
+        public async Task DeleteAuthToken(string authToken, ApplicationUser user)
         {
-            var targetToken = DbContext.AuthenticationTokens.FirstOrDefault(x => x.UserId == user.Id && x.Token == tokenGuid);
-            if (targetToken != null)
+            DbContext.AuthenticationTokens.RemoveRange(DbContext.AuthenticationTokens.Where(x => x.User.Id == user.Id && x.Token == authToken));
+            await DbContext.SaveChangesAsync();
+        }
+
+        public async Task DeleteAuthTokens(string[] authTokens, ApplicationUser user)
+        {
+            DbContext.AuthenticationTokens.RemoveRange(DbContext.AuthenticationTokens.Where(x => x.User.Id == user.Id && authTokens.Contains(x.Token)));
+            await DbContext.SaveChangesAsync();
+        }
+
+        public async Task DeleteFile(string fileGuid, ApplicationUser user)
+        {
+            DbContext.FileDescriptions.RemoveRange(DbContext.FileDescriptions.Where(x => x.User.Id == user.Id && x.Guid == fileGuid));
+            await DbContext.SaveChangesAsync();
+        }
+
+        public async Task DeleteFile(string fileGuid, string authenticationToken, string ipAddress)
+        {
+            var authToken = DbContext.AuthenticationTokens
+                             .Include(x => x.User)
+                             .ThenInclude(x=>x.FileDescriptions)
+                             .FirstOrDefault(x => x.Token == authenticationToken);
+            if (authToken != null)
             {
-                targetToken.Description = description;
+                authToken.LastUsed = DateTime.Now;
+                authToken.LastUsedIp = ipAddress;
+                authToken.User.FileDescriptions.RemoveAll(x => x.Guid == fileGuid);
+                await DbContext.SaveChangesAsync();
+            }
+        }
+
+        public async Task DeleteFiles(string[] fileGuids, ApplicationUser user)
+        {
+            DbContext.FileDescriptions.RemoveRange(DbContext.FileDescriptions.Where(x => x.User.Id == user.Id && fileGuids.Contains(x.Guid)));
+            await DbContext.SaveChangesAsync();
+        }
+
+        public async Task DeleteFiles(string[] fileGuids, string authenticationToken, string ipAddress)
+        {
+            var authToken = DbContext.AuthenticationTokens
+                             .Include(x => x.User)
+                             .ThenInclude(x => x.FileDescriptions)
+                             .FirstOrDefault(x => x.Token == authenticationToken);
+
+            if (authToken != null)
+            {
+                authToken.LastUsed = DateTime.Now;
+                authToken.LastUsedIp = ipAddress;
+                authToken.User.FileDescriptions.RemoveAll(x =>  fileGuids.Contains(x.Guid));
                 await DbContext.SaveChangesAsync();
             }
         }
@@ -78,11 +127,42 @@ namespace Conveyor.Data
             return DbContext.FileDescriptions.Where(x => x.User.Id == user.Id)?.ToList();
         }
 
+        public async Task<List<FileDescription>> GetAllDescriptions(string authenticationToken, string ipAddress)
+        {
+            var expiredDescriptions = DbContext.FileDescriptions.Where(x => x.DateUploaded.AddDays(AppConfig.DataRetentionInDays) < DateTime.Now);
+            if (expiredDescriptions.Any())
+            {
+                DbContext.FileDescriptions.RemoveRange(expiredDescriptions);
+                await DbContext.SaveChangesAsync();
+            }
+
+            var authToken = DbContext.AuthenticationTokens
+                           .Include(x => x.User)
+                           .ThenInclude(x => x.FileDescriptions)
+                           .FirstOrDefault(x => x.Token == authenticationToken);
+            if (authToken != null)
+            {
+                authToken.LastUsed = DateTime.Now;
+                authToken.LastUsedIp = ipAddress;
+                await DbContext.SaveChangesAsync();
+                return authToken.User.FileDescriptions;
+            }
+            return null;
+        }
+
         public FileDescription GetFileDescriptionAndContent(string fileGuid, ApplicationUser user)
         {
             return DbContext.FileDescriptions
                     ?.Include(x => x.Content)
                     ?.Where(x => x.User.Id == user.Id)
+                    ?.FirstOrDefault(x => x.Guid == fileGuid);
+        }
+
+        public FileDescription GetFileDescriptionAndContent(string fileGuid, string authToken)
+        {
+            return DbContext.FileDescriptions
+                    ?.Include(x => x.Content)
+                    ?.Where(x => x.User.AuthenticationTokens.Any(y => y.Token == authToken))
                     ?.FirstOrDefault(x => x.Guid == fileGuid);
         }
 
@@ -102,6 +182,16 @@ namespace Conveyor.Data
                 file.UserId = user.Id;
             }
             await DbContext.SaveChangesAsync();
+        }
+
+        public async Task UpdateTokenDescription(string tokenGuid, string description, ApplicationUser user)
+        {
+            var targetToken = DbContext.AuthenticationTokens.FirstOrDefault(x => x.UserId == user.Id && x.Token == tokenGuid);
+            if (targetToken != null)
+            {
+                targetToken.Description = description;
+                await DbContext.SaveChangesAsync();
+            }
         }
 
         public async Task WriteEvent(EventLog eventLog)
