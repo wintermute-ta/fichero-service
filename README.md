@@ -1,2 +1,2 @@
 # Fichero
-Service for sharing files built with ASP.NET Core
+Service for sharing files
