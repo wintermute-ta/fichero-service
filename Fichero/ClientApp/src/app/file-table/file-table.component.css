@@ -1,8 +1,0 @@
-table {
-  min-height: 5rem;
-}
-
-.blurred {
-  filter: blur(3px);
-  transition: .5s all;
-}
